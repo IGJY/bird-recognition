@@ -149,6 +149,9 @@ def main():
     # 设置学习率调度器
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
 
+    # 初始化最好的准确率
+    best_acc = 0.0
+
     start_time = time.time()
     for epoch in range(args.epochs):
         # 训练
@@ -177,7 +180,13 @@ def main():
         tb_writer.add_scalar(tags[4], optimizer.param_groups[0]["lr"], epoch)
 
         # 保存模型权重
-        torch.save(model.state_dict(), "./weights/model-{}.pth".format(epoch + 1))
+        # torch.save(model.state_dict(), "./weights/model-{}.pth".format(epoch + 1))
+        # 在每个 epoch 结束后，检查当前验证准确率是否高于历史最高准确率
+        if val_acc > best_acc:
+            best_acc = val_acc
+            torch.save(model.state_dict(), "./weights/best_model.pth")
+            print(f"Saved best model with accuracy: {best_acc:.4f}")
+
     tb_writer.close()
     end_time = time.time()
     elapsed = round(end_time - start_time)

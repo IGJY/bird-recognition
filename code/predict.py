@@ -26,6 +26,14 @@ bird_classes = {
 }
 
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = './weights'
+app.config['ALLOWED_EXTENSIONS'] = {'pth'}
+app.secret_key = 'supersecretkey'  # 为了使用 flash 消息
+
+
+def allowed_file(filename):
+    return '.' in filename and \
+        filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 
 @app.route('/predict', methods=['POST'])
@@ -54,7 +62,7 @@ def predict():
     MFCC_audio_tensor = torch.from_numpy(MFCC_audio_file).unsqueeze(0).float()
 
     # 加载模型
-    model = model_loading_script.load_model_and_weights("./weights/model-8.pth")
+    model = model_loading_script.load_model_and_weights("./weights/best_model.pth")
     if model is None:
         return jsonify({'error': 'Failed to load model'}), 500
 
@@ -62,6 +70,8 @@ def predict():
     with torch.no_grad():
         model.eval()
         prediction = model(MFCC_audio_tensor)
+
+    print(prediction)
 
     # 获取预测结果的索引
     predicted_class = torch.argmax(prediction, dim=1).item()
@@ -76,6 +86,22 @@ def predict():
         bird_species = "Unknown"
 
     return jsonify({'prediction': predicted_class, 'no': bird_number, 'specie': bird_species})
+
+
+@app.route('/upload_model', methods=['POST'])
+def upload_model():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    if file and allowed_file(file.filename):
+        filename = 'best_model.pth'
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        return jsonify({'message': 'Model uploaded and replaced successfully'}), 200
+    else:
+        return jsonify({'error': 'File type not allowed'}), 400
 
 
 if __name__ == '__main__':
