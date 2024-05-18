@@ -1,4 +1,4 @@
-# predict.py
+# model.py
 import torch
 from flask import Flask, request, jsonify
 import model_loading_script  # 导入加载模型的脚本
@@ -28,7 +28,7 @@ bird_classes = {
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = './weights'
 app.config['ALLOWED_EXTENSIONS'] = {'pth'}
-app.secret_key = 'supersecretkey'  # 为了使用 flash 消息
+# app.secret_key = 'supersecretkey'  # 为了使用 flash 消息
 
 
 def allowed_file(filename):
