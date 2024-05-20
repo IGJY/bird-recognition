@@ -6,6 +6,8 @@ import MFCC
 import os
 import tempfile
 
+from Save_MFCC import save_MFCC
+
 # 在 predict 函数外部创建临时文件夹
 TEMP_FOLDER = tempfile.mkdtemp()
 
@@ -103,6 +105,17 @@ def upload_model():
     else:
         return jsonify({'error': 'File type not allowed'}), 400
 
+
+@app.route('/save_MFCC', methods=['POST'])
+def extract_and_save_features():
+    try:
+        # 调用 save_MFCC 函数处理和保存特征
+        save_MFCC()
+        # 返回成功消息
+        return jsonify({'message': 'Feature extraction and saving completed successfully'}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
