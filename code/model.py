@@ -38,6 +38,7 @@ def allowed_file(filename):
         filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 
+# 预测
 @app.route('/predict', methods=['POST'])
 def predict():
     # 获取上传的文件
@@ -90,6 +91,7 @@ def predict():
     return jsonify({'prediction': predicted_class, 'no': bird_number, 'specie': bird_species})
 
 
+# 上传模型
 @app.route('/upload_model', methods=['POST'])
 def upload_model():
     if 'file' not in request.files:
@@ -106,6 +108,7 @@ def upload_model():
         return jsonify({'error': 'File type not allowed'}), 400
 
 
+# 提取MFCC特征并且保存为npy文件
 @app.route('/save_MFCC', methods=['POST'])
 def extract_and_save_features():
     try:
@@ -113,6 +116,41 @@ def extract_and_save_features():
         save_MFCC()
         # 返回成功消息
         return jsonify({'message': 'Feature extraction and saving completed successfully'}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# 上传保存鸟类音频文件到数据集里
+@app.route('/save_audio', methods=['POST'])
+def save_audio():
+    try:
+        # 获取上传的文件
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file part'}), 400
+        file = request.files['file']
+
+        # 获取编号参数
+        bird_number = request.form.get('number')
+        if not bird_number:
+            return jsonify({'error': 'No number provided'}), 400
+
+        # 检查编号是否在指定列表中
+        valid_numbers = ["0017", "0034", "0114", "0180", "0202", "0298", "0300", "0368", "0370", "1331"]
+        if bird_number not in valid_numbers:
+            return jsonify({'error': 'Invalid number provided'}), 400
+
+        # 检查文件是否允许的类型
+        if file.filename == '':
+            return jsonify({'error': 'No selected file'}), 400
+
+        # 生成保存路径
+        save_dir = os.path.join('..', 'data', 'BirdsSong-10spec-graduation', bird_number)
+        os.makedirs(save_dir, exist_ok=True)
+        file_path = os.path.join(save_dir, file.filename)
+        file.save(file_path)
+
+        return jsonify({'message': 'Audio file saved successfully'}), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
