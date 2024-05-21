@@ -34,7 +34,7 @@ def save_MFCC():
     label_train = torch.tensor(label_train)
     label_train = torch.squeeze(label_train)
 
-    np.save('../data/MFCC_train/MFCC_train_sample.npy', mfcc_train)
-    np.save("../data/MFCC_train/MFCC_train_label.npy", label_train)
+    np.save('../data/MFCC_train/MFCC_train_combine.npy', mfcc_train)
+    np.save("../data/MFCC_train/MFCC_train_label_combine.npy", label_train)
 
     print("保存完毕")
