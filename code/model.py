@@ -1,4 +1,6 @@
 # model.py
+import shutil
+
 import torch
 from flask import Flask, request, jsonify
 import model_loading_script  # 导入加载模型的脚本
@@ -154,6 +156,37 @@ def save_audio():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# 复制npy文件，用新的训练集替换原来的训练集
+@app.route('/copy_MFCC', methods=['POST'])
+def copy_mfcc():
+    try:
+        source_file = '../data/MFCC_train/MFCC_train_combine.npy'
+        destination_file = '../data/MFCC_train_combine.npy'
+
+        # 检查源文件是否存在
+        if not os.path.exists(source_file):
+            return jsonify({'error': 'Source file does not exist'}), 400
+
+        # 复制文件
+        shutil.copyfile(source_file, destination_file)
+
+        source_file = '../data/MFCC_train/MFCC_train_label_combine.npy'
+        destination_file = '../data/MFCC_train_label_combine.npy'
+
+        # 检查源文件是否存在
+        if not os.path.exists(source_file):
+            return jsonify({'error': 'Source file does not exist'}), 400
+
+        # 复制文件
+        shutil.copyfile(source_file, destination_file)
+
+        return jsonify({'message': 'File copied successfully'}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
