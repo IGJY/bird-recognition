@@ -41,6 +41,56 @@ def allowed_file(filename):
 
 
 # 预测
+# @app.route('/predict', methods=['POST'])
+# def predict():
+#     # 获取上传的文件
+#     uploaded_file = request.files['file']
+#
+#     # 检查是否上传了文件
+#     if 'file' not in request.files:
+#         return jsonify({'error': 'No file provided'}), 400
+#
+#     # 生成临时文件路径
+#     temp_file_path = os.path.join(TEMP_FOLDER, 'uploaded_audio.wav')
+#
+#     # 保存上传的文件到临时文件夹
+#     # temp_file_path = '/tmp/uploaded_audio.wav'
+#     uploaded_file.save(temp_file_path)
+#
+#     # 调用 MFCC 函数处理上传的文件
+#     MFCC_audio_file = MFCC.get_MFCC(temp_file_path)
+#
+#     # 删除临时文件
+#     os.remove(temp_file_path)
+#
+#     # 将 numpy 数组转换为 PyTorch 张量
+#     MFCC_audio_tensor = torch.from_numpy(MFCC_audio_file).unsqueeze(0).float()
+#
+#     # 加载模型
+#     model = model_loading_script.load_model_and_weights("./weights/best_model.pth")
+#     if model is None:
+#         return jsonify({'error': 'Failed to load model'}), 500
+#
+#     # 在模型中进行预测
+#     with torch.no_grad():
+#         model.eval()
+#         prediction = model(MFCC_audio_tensor)
+#
+#     print(prediction)
+#
+#     # 获取预测结果的索引
+#     predicted_class = torch.argmax(prediction, dim=1).item()
+#
+#     # 将预测结果转换为鸟类编号和种类
+#     if predicted_class in bird_classes:
+#         bird_info = bird_classes[predicted_class]
+#         bird_number = bird_info["编号"]
+#         bird_species = bird_info["种类"]
+#     else:
+#         bird_number = -1
+#         bird_species = "Unknown"
+#
+#     return jsonify({'prediction': predicted_class, 'no': bird_number, 'specie': bird_species})
 @app.route('/predict', methods=['POST'])
 def predict():
     # 获取上传的文件
@@ -54,43 +104,53 @@ def predict():
     temp_file_path = os.path.join(TEMP_FOLDER, 'uploaded_audio.wav')
 
     # 保存上传的文件到临时文件夹
-    # temp_file_path = '/tmp/uploaded_audio.wav'
     uploaded_file.save(temp_file_path)
 
     # 调用 MFCC 函数处理上传的文件
-    MFCC_audio_file = MFCC.get_MFCC(temp_file_path)
+    mfcc_segments = MFCC.get_MFCC(temp_file_path)
 
     # 删除临时文件
     os.remove(temp_file_path)
-
-    # 将 numpy 数组转换为 PyTorch 张量
-    MFCC_audio_tensor = torch.from_numpy(MFCC_audio_file).unsqueeze(0).float()
 
     # 加载模型
     model = model_loading_script.load_model_and_weights("./weights/best_model.pth")
     if model is None:
         return jsonify({'error': 'Failed to load model'}), 500
 
-    # 在模型中进行预测
+    # 初始化累加预测向量
+    total_prediction = None
+
+    # 预测每个片段
     with torch.no_grad():
         model.eval()
-        prediction = model(MFCC_audio_tensor)
+        for mfcc_segment in mfcc_segments:
+            mfcc_audio_tensor = torch.from_numpy(mfcc_segment).unsqueeze(0).float()
+            prediction = model(mfcc_audio_tensor)
+            print("prediction:")
+            print(prediction)
 
-    print(prediction)
+            if total_prediction is None:
+                total_prediction = prediction
+                print("total_prediction:")
+                print(total_prediction)
+            else:
+                total_prediction += prediction
+                print("total_prediction:")
+                print(total_prediction)
 
-    # 获取预测结果的索引
-    predicted_class = torch.argmax(prediction, dim=1).item()
+    # 获取累加预测结果的索引
+    final_prediction = torch.argmax(total_prediction, dim=1).item()
 
     # 将预测结果转换为鸟类编号和种类
-    if predicted_class in bird_classes:
-        bird_info = bird_classes[predicted_class]
+    if final_prediction in bird_classes:
+        bird_info = bird_classes[final_prediction]
         bird_number = bird_info["编号"]
         bird_species = bird_info["种类"]
     else:
         bird_number = -1
         bird_species = "Unknown"
 
-    return jsonify({'prediction': predicted_class, 'no': bird_number, 'specie': bird_species})
+    return jsonify({'prediction': final_prediction, 'no': bird_number, 'specie': bird_species})
 
 
 # 上传模型
