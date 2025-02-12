@@ -2,6 +2,8 @@ import ntpath
 import os
 import sys
 import time
+import wave
+
 
 import librosa
 from librosa import feature
@@ -31,8 +33,19 @@ from tqdm import tqdm
 #     # return mfcc, label
 #     return mfcc
 
+# def check_wav_file(wav_file):
+#     try:
+#         with wave.open(wav_file, 'rb') as f:
+#             print(f"File {wav_file} is valid WAV file, num frames: {f.getnframes()}, num channels: {f.getnchannels()}")
+#     except Exception as e:
+#         print(f"Error with WAV file: {e}")
+
 def get_MFCC(wav_file, segment_duration=2.0, sr=16000):
+
+    # print("加载音频")
     wav, sr = librosa.load(wav_file, sr=sr)  # 加载完整音频
+    # print(f"Audio data type: {type(wav)}, shape: {wav.shape}")
+    # print("加载完成")
 
     mfcc_segments = []
 
@@ -50,6 +63,7 @@ def get_MFCC(wav_file, segment_duration=2.0, sr=16000):
             break
 
         mfcc_delta0 = librosa.feature.mfcc(y=wav_segment, sr=sr, n_mfcc=60)
+        # print(f"mfcc_delta0 type: {type(mfcc_delta0)}, shape: {mfcc_delta0.shape}")
         mfcc_delta1 = librosa.feature.delta(mfcc_delta0)
         mfcc_delta2 = librosa.feature.delta(mfcc_delta1, order=2)
 

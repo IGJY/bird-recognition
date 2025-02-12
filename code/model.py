@@ -10,8 +10,12 @@ import tempfile
 
 from Save_MFCC import save_MFCC
 
-# 在 predict 函数外部创建临时文件夹
-TEMP_FOLDER = tempfile.mkdtemp()
+# 定义项目目录下的临时文件夹
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TEMP_FOLDER = os.path.join(BASE_DIR, 'tmp')
+
+# 如果文件夹不存在，则创建
+os.makedirs(TEMP_FOLDER, exist_ok=True)
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
@@ -39,16 +43,19 @@ def allowed_file(filename):
     return '.' in filename and \
         filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
-
 # 预测
 # @app.route('/predict', methods=['POST'])
 # def predict():
-#     # 获取上传的文件
-#     uploaded_file = request.files['file']
+#     print("Received request at /predict")  # 添加调试信息
 #
 #     # 检查是否上传了文件
 #     if 'file' not in request.files:
 #         return jsonify({'error': 'No file provided'}), 400
+#
+#     # 获取上传的文件
+#     uploaded_file = request.files['file']
+#
+#     print("Received file:", uploaded_file.filename)  # 添加调试信息，检查上传的文件名
 #
 #     # 生成临时文件路径
 #     temp_file_path = os.path.join(TEMP_FOLDER, 'uploaded_audio.wav')
@@ -56,9 +63,14 @@ def allowed_file(filename):
 #     # 保存上传的文件到临时文件夹
 #     # temp_file_path = '/tmp/uploaded_audio.wav'
 #     uploaded_file.save(temp_file_path)
+#     print(f"Temp file path: {temp_file_path}")
+#     if not os.path.exists(temp_file_path):
+#         print(f"File does not exist: {temp_file_path}")
 #
+#     print("Processing MFCC features...")
 #     # 调用 MFCC 函数处理上传的文件
 #     MFCC_audio_file = MFCC.get_MFCC(temp_file_path)
+#     print("MFCC features processed:", MFCC_audio_file.shape)
 #
 #     # 删除临时文件
 #     os.remove(temp_file_path)
@@ -66,15 +78,20 @@ def allowed_file(filename):
 #     # 将 numpy 数组转换为 PyTorch 张量
 #     MFCC_audio_tensor = torch.from_numpy(MFCC_audio_file).unsqueeze(0).float()
 #
+#     print("Loading model...")
 #     # 加载模型
 #     model = model_loading_script.load_model_and_weights("./weights/best_model.pth")
 #     if model is None:
+#         print("Failed to load model.")
 #         return jsonify({'error': 'Failed to load model'}), 500
+#     print("Model loaded successfully")
 #
+#     print("Predicting...")
 #     # 在模型中进行预测
 #     with torch.no_grad():
 #         model.eval()
 #         prediction = model(MFCC_audio_tensor)
+#         print("Model prediction:", prediction)
 #
 #     print(prediction)
 #
@@ -91,6 +108,7 @@ def allowed_file(filename):
 #         bird_species = "Unknown"
 #
 #     return jsonify({'prediction': predicted_class, 'no': bird_number, 'specie': bird_species})
+
 @app.route('/predict', methods=['POST'])
 def predict():
     # 获取上传的文件
@@ -102,6 +120,9 @@ def predict():
 
     # 生成临时文件路径
     temp_file_path = os.path.join(TEMP_FOLDER, 'uploaded_audio.wav')
+
+    # 输出临时文件地址
+    # print("Temp file path:", temp_file_path)
 
     # 保存上传的文件到临时文件夹
     uploaded_file.save(temp_file_path)
